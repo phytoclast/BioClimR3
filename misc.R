@@ -177,16 +177,15 @@ biosum <- readRDS('data/biomesum.RDS')
                                              "tropical" = "darkred"
       ))+
       
-      scale_x_continuous(name= "Coldest Month (Annual Extreme Minimum)",
+      scale_x_continuous(name= "Coldest Month (Daily Minimum)",
                          breaks=breaksx,
                          labels=paste0(breaksx,'(', breaksx-3,')'))+
       scale_y_continuous(name= "Growing Season", breaks=breaksy, expand=F)+
       coord_fixed(ratio = 1/1,xlim = c(-45,30), ylim = c(0, 33))+
       labs(title = paste("Climate of ",sname, "", sep=""))+
       theme_bw()+
-      theme(legend.position='right',axis.text.x = element_text(angle = 90, vjust = 0, hjust = 0),
+      theme(legend.position='right',axis.text.x = element_text(angle = 90, vjust = 0, hjust = 1),
             panel.grid.major = element_line(), panel.grid.minor = element_blank())
-    
     
     
     mtable <- df[,c('mon', 't', 'th', 'tl', 'p', 'e', 'a','u', 'Ra')]

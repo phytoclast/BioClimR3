@@ -201,7 +201,7 @@ server <- function(input, output) {
     a6=data.frame(x=c(0,0,12,12), y=c(18,36,36,18))
     a7=data.frame(x=c(0,12,12,24,18,6), y=c(6,18,24,24,18,6))
     a8=data.frame(x=c(12,12,36,24), y=c(24,36,36,24))
-    breaksx=c(-45,-40, -35, -30, -25, -20,-15, -10,-5, 0,5, 10,15, 20,25,30)
+    breaksx=seq(-60,30,6)
     breaksy=c(0,6,12,18,24,30)
     ll1 <- data.frame(x=c(-50,6), y=c(6,6))
     ll2 <- data.frame(x=c(0,0), y=c(0,36))
@@ -249,14 +249,14 @@ server <- function(input, output) {
                                              "tropical" = "darkred"
       ))+
       
-      scale_x_continuous(name= "Coldest Month (Annual Extreme Minimum)",
+      scale_x_continuous(name= "Coldest Month (Daily Minimum)",
                          breaks=breaksx,
                          labels=paste0(breaksx,'(', breaksx-3,')'))+
-      scale_y_continuous(name= "Growing Season", breaks=breaksy, expand=F)+
+      scale_y_continuous(name= "Growing Season", breaks=breaksy, expand=FALSE)+
       coord_fixed(ratio = 1/1,xlim = c(-45,30), ylim = c(0, 33))+
       labs(title = paste("Climate of ",sname, "", sep=""))+
       theme_bw()+
-      theme(legend.position='right',axis.text.x = element_text(angle = 90, vjust = 0, hjust = 0),
+      theme(legend.position='right',axis.text.x = element_text(angle = 90, vjust = 0, hjust = 1),
             panel.grid.major = element_line(), panel.grid.minor = element_blank())
     
     mtable <- df[,c('mon', 't', 'th', 'tl', 'p', 'e', 'a','u', 'Ra')]
