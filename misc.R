@@ -3,7 +3,7 @@ library(climatools)
 library(ggplot2)
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 biosum <- readRDS('data/biomesum.RDS')
-    sclim <- biosum[50,]
+    sclim <- biosum[2,]
     sname = paste(sclim$LEVEL_NAME,"|", sclim$probiome)
     mon <- 1:12
     mnn <- sprintf("%02d", mon) 
@@ -21,7 +21,7 @@ biosum <- readRDS('data/biomesum.RDS')
     df$Ra <- GetSolarRad(GetDayNumber(df$mon),Lat=lat)
     df$e <- GetPET.df(mon=df$mon,lat=lat,th=df$th,tl=df$tl,p=df$p)
     df<-df|>cbind(SoilWaterBudget(df$p, df$e, awc=awc))
-    df$a <- pmin(df$e, df$p)
+    df$aa <- pmin(df$e, df$p)
     Tg <- climatools::warm6ppt(t=df$t,p=0,n=6,max_var = TRUE, v_input = 't', v_return = 'b',bt=0)
     MAAT <- mean(df$t)
     Tp <- weighted.mean(df$t, df$p)
@@ -31,7 +31,7 @@ biosum <- readRDS('data/biomesum.RDS')
     Twh <- max(df$th)
     PET <- sum(df$e)
     MAP <- sum(df$p)
-    AET <- sum(df$a)
+    AET <- sum(df$aa)
     prat <- MAP/(PET+0.01)
     m <- MAP/(PET+MAP+0.01)*100
     d <- 100-AET/(PET+0.01)*100
@@ -130,59 +130,59 @@ biosum <- readRDS('data/biomesum.RDS')
     a6=data.frame(x=c(0,0,12,12), y=c(18,36,36,18))
     a7=data.frame(x=c(0,12,12,24,18,6), y=c(6,18,24,24,18,6))
     a8=data.frame(x=c(12,12,36,24), y=c(24,36,36,24))
-    
+    breaksx=c(-45,-40, -35, -30, -25, -20,-15, -10,-5, 0,5, 10,15, 20,25,30)
+    breaksy=c(0,6,12,18,24,30)
     ll1 <- data.frame(x=c(-50,6), y=c(6,6))
     ll2 <- data.frame(x=c(0,0), y=c(0,36))
-    ll3 <- data.frame(x=c(15,15), y=c(18,36))
+    ll3 <- data.frame(x=c(12,12), y=c(18,36))
     l1 <- data.frame(x=c(-50,12), y=c(12,12))
-    l2 <- data.frame(x=c(-25,0), y=c(15,15))
-    l3 <- data.frame(x=c(-10,18), y=c(18,18))
-    l4 <- data.frame(x=c(15,24), y=c(24,24))
-    l5 <- data.frame(x=c(-10,-10), y=c(18,36))
+    l2 <- data.frame(x=c(-12,0), y=c(0,12))
+    l3 <- data.frame(x=c(-50,18), y=c(18,18))
+    l4 <- data.frame(x=c(-50,24), y=c(24,24))
+    l5 <- data.frame(x=c(-6,12), y=c(0,18))
     l6 <- data.frame(x=c(-25,-25), y=c(15,36))
     l7 <- data.frame(x=c(5,5), y=c(18,36))
-    l8 <- data.frame(x=c(15,15), y=c(24,36))
+    l8 <- data.frame(x=c(12,12), y=c(24,36))
     # climplot2 <-  
-        ggplot() +
-        geom_polygon(data=a1, mapping=aes(x=x, y=y, fill='alpine'),alpha = 0.5)+
-        geom_polygon(data=a2, mapping=aes(x=x, y=y, fill='boreal'),alpha = 0.5)+
-        geom_polygon(data=a3, mapping=aes(x=x, y=y, fill='continental'),alpha = 0.5)+
-        geom_polygon(data=a4, mapping=aes(x=x, y=y, fill='andean'),alpha = 0.5)+
-        geom_polygon(data=a5, mapping=aes(x=x, y=y, fill='oceanic'),alpha = 0.5)+
-        geom_polygon(data=a6, mapping=aes(x=x, y=y, fill='subtropical'),alpha = 0.5)+
-            geom_polygon(data=a7, mapping=aes(x=x, y=y, fill='montane'),alpha = 0.5)+
-            geom_polygon(data=a8, mapping=aes(x=x, y=y, fill='tropical'),alpha = 0.5)+
-        
-        geom_line(data=ll1, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
-        geom_line(data=ll2, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
-        geom_line(data=ll3, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
-        geom_line(data=l1, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
-        geom_line(data=l2, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
-        geom_line(data=l3, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
-        geom_line(data=l4, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
-        geom_line(data=l5, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
-        geom_line(data=l6, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
-        geom_line(data=l7, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
-        geom_line(data=l8, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
-        geom_point(data=sclim, mapping=aes(x=cindex, y=Tg), color = 'black', size=0.5)+
-        #geom_density2d(data=StationMeans, mapping=aes(x=Cindex, y=Tg),color = 'black',alpha = 0.25)+
-        scale_fill_manual("Legend", values = c("alpine" = "pink",
-                                               "boreal" = "darkgreen",
-                                               "continental" = "greenyellow",
-                                               "andean" = "lightblue",
-                                               "oceanic" = "darkcyan",
-                                               "subtropical" = "orange",
-                                               "montane" = "yellow",
-                                               "tropical" = "darkred"
-        ))+
-        
-        scale_x_continuous(name= "Coldest Month (Annual Extreme Minimum)",
-                           breaks=c(-45,-40, -35, -30, -25, -20,-15, -10,-5, 0,5, 10,15, 20,25,30),
-                           labels=c('-45 (-60)','-40 (-55)', '-35 (-50)','-30 (-45)', '-25 (-40)','-20 (-35)','-15 (-30)','-10 (-25)',
-                                    '-5 (-20)','0 (-15)','5 (-10)','10 (-5)','15 (0)','20 (5)','25 (10)','30 (15)'))+
-        scale_y_continuous(name= "Growing Season", breaks=c(0,6,12,18,24,30))+
-        coord_fixed(ratio = 1/1,xlim = c(-45,30), ylim = c(0, 33))+
-        labs(title = paste("Climate of ",sname, "", sep=""))+
-        theme_bw()+
-        theme(legend.position='right',axis.text.x = element_text(angle = 90, vjust = 0, hjust = 0),
-              panel.grid.major = element_line(), panel.grid.minor = element_blank())
+    ggplot() +
+      geom_polygon(data=a1, mapping=aes(x=x, y=y, fill='alpine'),alpha = 0.5)+
+      geom_polygon(data=a2, mapping=aes(x=x, y=y, fill='boreal'),alpha = 0.5)+
+      geom_polygon(data=a3, mapping=aes(x=x, y=y, fill='continental'),alpha = 0.5)+
+      geom_polygon(data=a4, mapping=aes(x=x, y=y, fill='andean'),alpha = 0.5)+
+      geom_polygon(data=a5, mapping=aes(x=x, y=y, fill='oceanic'),alpha = 0.5)+
+      geom_polygon(data=a6, mapping=aes(x=x, y=y, fill='subtropical'),alpha = 0.5)+
+      geom_polygon(data=a7, mapping=aes(x=x, y=y, fill='montane'),alpha = 0.5)+
+      geom_polygon(data=a8, mapping=aes(x=x, y=y, fill='tropical'),alpha = 0.5)+
+      
+      geom_line(data=ll1, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
+      geom_line(data=ll2, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
+      geom_line(data=ll3, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
+      geom_line(data=l1, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
+      geom_line(data=l2, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
+      geom_line(data=l3, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
+      geom_line(data=l4, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
+      geom_line(data=l5, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
+      # geom_line(data=l6, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
+      # geom_line(data=l7, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
+      geom_line(data=l8, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
+      # geom_point(data=sclim, mapping=aes(x=cindex, y=Tg), color = 'black', size=0.5)+
+      #geom_density2d(data=StationMeans, mapping=aes(x=Cindex, y=Tg),color = 'black',alpha = 0.25)+
+      scale_fill_manual("Legend", values = c("alpine" = "lightblue",
+                                             "boreal" = "darkgreen",
+                                             "continental" = "yellowgreen",
+                                             "andean" = "yellow",
+                                             "oceanic" = "darkcyan",
+                                             "subtropical" = "orange",
+                                             "montane" = "pink",
+                                             "tropical" = "darkred"
+      ))+
+      
+      scale_x_continuous(name= "Coldest Month (Annual Extreme Minimum)",
+                         breaks=breaksx,
+                         labels=paste0(breaksx,'(', breaksx-3,')'))+
+      scale_y_continuous(name= "Growing Season", breaks=breaksy, expand=F)+
+      coord_fixed(ratio = 1/1,xlim = c(-45,30), ylim = c(0, 33))+
+      labs(title = paste("Climate of ",sname, "", sep=""))+
+      theme_bw()+
+      theme(legend.position='right',axis.text.x = element_text(angle = 90, vjust = 0, hjust = 0),
+            panel.grid.major = element_line(), panel.grid.minor = element_blank())

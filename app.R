@@ -24,13 +24,13 @@ ui <- bslib::page_fluid(
         sliderInput(
         'root', 'Effective root depth (cm)', 100, min = 0, max = 500, step = 10)),
       fluidRow(
-        verbatimTextOutput('AWC'))
+        verbatimTextOutput('AWC')),
+      fluidRow(
+        column(12,verbatimTextOutput('climatext')))
     ),
     mainPanel(
       fluidRow(
-        column(12,plotOutput("climplot",  width = "100%", height = "600px"))),
-      fluidRow(
-        column(12,verbatimTextOutput('climatext')))
+        column(12,plotOutput("climplot",  width = "100%", height = "600px")))
       )))
 
 
@@ -80,7 +80,7 @@ server <- function(input, output) {
     df$Ra <- GetSolarRad(GetDayNumber(df$mon),Lat=lat)
     df$e <- GetPET.df(mon=df$mon,lat=lat,th=df$th,tl=df$tl,p=df$p)
     df<-df|>cbind(SoilWaterBudget(df$p, df$e, awc=awc))
-    df$a <- pmin(df$e, df$p)
+    df$aa <- pmin(df$e, df$p)
     Tg <- climatools::warm6ppt(t=df$t,p=0,n=6,max_var = TRUE, v_input = 't', v_return = 'b',bt=0)
     MAAT <- mean(df$t)
     Tp <- weighted.mean(df$t, df$p)
@@ -90,7 +90,7 @@ server <- function(input, output) {
     Twh <- max(df$th)
     PET <- sum(df$e)
     MAP <- sum(df$p)
-    AET <- sum(df$a)
+    AET <- sum(df$aa)
     prat <- MAP/(PET+0.01)
     m <- MAP/(PET+MAP+0.01)*100
     d <- 100-AET/(PET+0.01)*100
@@ -102,7 +102,7 @@ server <- function(input, output) {
                         "MAAT: ",round(MAAT,1),"°C | MAP: ",round(MAP,0)," mm | PET: ",round(PET,0)," mm\n",
                         "Twh: ",round(Twh,1),"°C | Tw: ",round(Tw,1),"°C | Tg: ",round(Tg,1),"°C\n",
                         "Tc: ",round(Tc,1),"°C | Tcl: ",round(Tcl,1),"°C | Tclx: ",round(Tclx,1),"°C\n",
-                        "Tp: ",round(Tp,1),"°C | MAP/PET: ",round(prat,2)," | moisture index: ",round(m,0),"% | drought index: ",round(d,0),"%")
+                        "Tp: ",round(Tp,1),"°C | MAP/PET: ",round(prat,2)," | m: ",round(m,0),"% | d index: ",round(d,0),"%")
     
     cregime <- case_when(cindex < 0 & Tg - cindex >= 12 ~ 1 ,
                          cindex < 12 & Tg - cindex >= 6  ~ 2,
