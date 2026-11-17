@@ -2,6 +2,7 @@ library(shiny)
 library(climatools)
 library(ggplot2)
 biosum <- readRDS('data/biomesum.RDS')
+
 ui <- bslib::page_fluid(
   
   tags$head(
@@ -14,10 +15,12 @@ ui <- bslib::page_fluid(
   headerPanel('Climate Workshop'),
   sidebarLayout(
     sidebarPanel(
+      ###############################
       fluidRow(  
         column(10,htmlOutput("country"))),
       fluidRow(    
         column(10,htmlOutput("biome"))),
+      ###############################
       fluidRow(
         radioButtons(
           'soil','soil texture', choices = c('gravel'=0.03,sand=0.06535,'loam'=0.1104667,'muck'=0.5413333), selected =0.06535),
@@ -28,18 +31,22 @@ ui <- bslib::page_fluid(
       fluidRow(
         column(12,verbatimTextOutput('climatext'))),
       fluidRow(
-             radioButtons("RadioGraphtype",inline = T,  label = ("Select Graph"),
-                          choiceNames = list(HTML("<font size=-3>Monthly"), 
-                                             HTML("Summer × Winter")
-                                             ),
-                          choiceValues = list(1,2),
-                          selected = 1)),
+        radioButtons("RadioGraphtype",inline = T,  label = ("Select Graph"),
+                     choiceNames = list(HTML("<font size=-3>Monthly"), 
+                                        HTML("Summer × Winter")
+                     ),
+                     choiceValues = list(1,2),
+                     selected = 1)),
       HTML("</font>")
     ),
     mainPanel(
       tabsetPanel(
-        tabPanel('Plot',column(12,plotOutput("climplot",  width = "100%", height = "600px"))),
-        tabPanel('Table',tableOutput('Climtab'))
+        tabPanel('Plot',
+                 fluidRow(column(12,plotOutput("climplot",  width = "100%", height = "600px"))),
+                 fluidRow(column(width = 2,checkboxInput("simplebar", label = "Simple Bar Graph", value = FALSE)))),
+
+        tabPanel('Table',tableOutput('Climtab')),
+        tabPanel('Reference',verbatimTextOutput('climaref'))
       )
     )))
 
@@ -47,6 +54,7 @@ ui <- bslib::page_fluid(
 
 server <- function(input, output) {
   rv <- reactiveValues(my_text = "") 
+  ###############################
   output$country = renderUI({
     
     listcountries <- sort(unique(biosum$LEVEL_NAME))
@@ -65,12 +73,13 @@ server <- function(input, output) {
                 choices = unique(listbiomes), #calls list of available counties
                 selected = 'temperate forest')
   })
-  
+  ###############################
   output$AWC <- renderText({
     paste("Available water holding capacity",round(as.numeric(input$soil)*input$root*10,1),"mm.")
   })
   
   output$climplot <- renderPlot({
+    ###############################
     sclim <- subset(biosum, LEVEL_NAME %in% input$countryselect & probiome %in% input$biomeselect)[1,]
     sname = paste(sclim$LEVEL_NAME,"|", sclim$probiome)
     mon <- 1:12
@@ -84,7 +93,7 @@ server <- function(input, output) {
                       tl=t(sclim[,paste0('tl',mnn)]))
     
     df$t <- (df$th+df$tl)/2
-    
+    ###############################
     awc <- as.numeric(input$soil)*input$root*10
     
     df$Ra <- GetSolarRad(GetDayNumber(df$mon),Lat=lat)
@@ -100,10 +109,12 @@ server <- function(input, output) {
     Twh <- max(df$th)
     PET <- sum(df$e)
     MAP <- sum(df$p)
-    AET <- sum(df$aa)
+    pAET <- sum(df$aa)
+    AET <- sum(df$a)
     prat <- MAP/(PET+0.01)
     m <- MAP/(PET+MAP+0.01)*100
-    d <- 100-AET/(PET+0.01)*100
+    d <- 100-pAET/(PET+0.01)*100
+    Sd <- 100-AET/(PET+0.01)*100
     Tclx <- climatools::XtremLow(Tcl=Tcl,Lat=lat,Lon=lon,Elev=elev)
     cindex <- pmin(Tc,Tcl+3)
     cindex2 <- pmin(Tc, Tclx*12/15+12)
@@ -112,7 +123,7 @@ server <- function(input, output) {
                         "MAAT: ",round(MAAT,1),"°C | MAP: ",round(MAP,0)," mm | PET: ",round(PET,0)," mm\n",
                         "Twh: ",round(Twh,1),"°C | Tw: ",round(Tw,1),"°C | Tg: ",round(Tg,1),"°C\n",
                         "Tc: ",round(Tc,1),"°C | Tcl: ",round(Tcl,1),"°C | Tclx: ",round(Tclx,1),"°C\n",
-                        "Tp: ",round(Tp,1),"°C | MAP/PET: ",round(prat,2)," | m: ",round(m,0),"% | d index: ",round(d,0),"%")
+                        "Tp: ",round(Tp,1),"°C | MAP/PET: ",round(prat,2)," | m: ",round(m,0),"% | d: ",round(d,0),"% | Sd: ",round(Sd,0)," mm")
     
     cregime <- case_when(cindex < 0 & Tg - cindex >= 12 ~ 1 ,
                          cindex < 12 & Tg - cindex >= 6  ~ 2,
@@ -175,23 +186,49 @@ server <- function(input, output) {
     
     
     climaclass <- paste(sname,'\n',mindex, tindex, paste0(' ',k1,k2,k3, ' (',alt,')'))
+    climaref <- paste(
+      "#Summary Statistics#\n
+      MAAT = mean annual air temperature.\n
+    MAP = mean annual precipitation.\n
+    PET = potential evapotranspiration (annual).\n
+    Twh = mean daily high temperature for the warmest month.\n
+    Tw = mean temperature for the warmest month.\n
+    Tc = mean temperature for the coldest month.\n
+    Tg = growing season temperature (mean positive temperature for the warmest 6 months).\n
+    Tcl = mean daily low temperature for the coldest month.\n
+    Tclx = mean annual extreme low temperature.\n
+  Tp = precipitation weighted mean temperature.\n
+   m = moisture index, MAP/(PET+MAP). \n
+   d = drought index, the total monthly deficit in precipitation relative to potential evapotranspiration.\n
+   Sd = seasonal soil moisture deficit.\n\n
+   #Monthly Table#\n
+  mon = month.\n
+  t = monthly mean temperature.\n
+  th = monthly mean daily high temperature.\n
+  tl = monthly mean daily low temperature.\n
+  p = monthly mean precipitation.\n
+  e = monthly PET.\n
+  a = monthly actual evapotranspiration (considers both precipitation and soil water).\n
+  u = monthly precipitation surplus.\n
+  Ra = mean daily solar radiation.")
     
+    rv$climaref <-climaref
     
     rv$climatext <- climatext
     
     climplot1 <- makeClimplot( t=df$t,
-                  p=df$p,
-                  th = df$th,
-                  tl = df$tl,
-                  e = df$e,
-                  a = df$a,
-                  u = df$u,
-                  t80 = NULL,
-                  t20 = NULL,
-                  p80 = NULL,
-                  p20 = NULL,
-                  name = climaclass,
-                  bar = F)
+                               p=df$p,
+                               th = df$th,
+                               tl = df$tl,
+                               e = df$e,
+                               a = df$a,
+                               u = df$u,
+                               t80 = NULL,
+                               t20 = NULL,
+                               p80 = NULL,
+                               p20 = NULL,
+                               name = climaclass,
+                               bar = input$simplebar)
     
     a1=data.frame(x=c(-50,-50,0,-6), y=c(0,6,6,0))
     a2=data.frame(x=c(-50,-50,0,-6), y=c(6,12,12,6))
@@ -237,7 +274,7 @@ server <- function(input, output) {
       # geom_line(data=l6, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
       # geom_line(data=l7, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
       geom_line(data=l8, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
-      geom_point(data=sclim, mapping=aes(x=cindex, y=Tg), color = 'black', size=0.5)+
+      geom_point(mapping=aes(x=cindex, y=Tg), color = 'black', size=0.5)+
       #geom_density2d(data=StationMeans, mapping=aes(x=Cindex, y=Tg),color = 'black',alpha = 0.25)+
       scale_fill_manual("Legend", values = c("alpine" = "lightblue",
                                              "boreal" = "darkgreen",
@@ -265,7 +302,7 @@ server <- function(input, output) {
       climplot1 
     }else if(input$RadioGraphtype == 2) {
       climplot2
-      }
+    }
     
     
     
@@ -274,6 +311,10 @@ server <- function(input, output) {
   
   output$climatext <- renderText({
     rv$climatext
+    
+  })
+  output$climaref <- renderText({
+    rv$climaref
     
   })
   output$Climtab = renderTable({ 
