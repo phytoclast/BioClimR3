@@ -165,15 +165,15 @@ biosum <- readRDS('data/biomesum.RDS')
       # geom_line(data=l6, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
       # geom_line(data=l7, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
       geom_line(data=l8, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
-      # geom_point(data=sclim, mapping=aes(x=cindex, y=Tg), color = 'black', size=0.5)+
+      geom_point(data=sclim, mapping=aes(x=cindex, y=Tg), color = 'black', size=0.5)+
       #geom_density2d(data=StationMeans, mapping=aes(x=Cindex, y=Tg),color = 'black',alpha = 0.25)+
       scale_fill_manual("Legend", values = c("alpine" = "lightblue",
                                              "boreal" = "darkgreen",
                                              "continental" = "yellowgreen",
-                                             "andean" = "yellow",
+                                             "andean" = "pink",
                                              "oceanic" = "darkcyan",
                                              "subtropical" = "orange",
-                                             "montane" = "pink",
+                                             "montane" = "pink4",
                                              "tropical" = "darkred"
       ))+
       
@@ -186,3 +186,8 @@ biosum <- readRDS('data/biomesum.RDS')
       theme_bw()+
       theme(legend.position='right',axis.text.x = element_text(angle = 90, vjust = 0, hjust = 0),
             panel.grid.major = element_line(), panel.grid.minor = element_blank())
+    
+    
+    
+    mtable <- df[,c('mon', 't', 'th', 'tl', 'p', 'e', 'a','u', 'Ra')]
+    xtable::xtable(mtable)
