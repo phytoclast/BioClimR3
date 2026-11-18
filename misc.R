@@ -2,6 +2,113 @@
 library(climatools)
 library(ggplot2)
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+
+biomepts <- readRDS('data/biomepts.RDS')
+summits <- readRDS('data/summits.RDS')
+summits2 <- summits
+biomepts <- biomepts |> rbind(summits[,colnames(biomepts)])
+mon <- 1:12
+mnn <- sprintf("%02d", mon) 
+thesecols <- c(paste0('th',mnn),paste0('th',mnn))
+for(i in 1:nrow(summits)){
+  for(k in 1:24){
+    #i=658;k=5
+    thispt <- summits[i,]
+    
+    geopt <- biomepts |> mutate(dst = ((thispt$lat-lat)^2+((thispt$lon-lon)*cos(thispt$lat*pi*2/360))^2)^0.5,
+                                rnk = rank(dst), wts = case_when(rnk <= 10 ~ 100,
+                                                                 rnk <= 20 ~ 1,
+                                                                 TRUE ~ 0))|>st_drop_geometry()
+    geopt$tval <- geopt[,thesecols[k]]
+    mod <- lm(tval ~ lat+lon+elev, geopt, weights=geopt$wts)
+    rate <- mod$coefficients[4]
+   newelev <- thispt$summit
+   oldelev <- thispt$elev
+   oldtval <- st_drop_geometry((thispt[,thesecols[k]]))[,1]
+    newtval <- (newelev-oldelev)*rate+oldtval
+    summits2[i,thesecols[k]] <- newtval
+  }}
+summits2$elev <- summits2$summit
+
+biomepts <- biomepts |> rbind(summits2[,colnames(biomepts)])
+saveRDS(biomepts,'data/biomeptsummits.RDS')
+#------------
+library(climatools)
+library(ggplot2)
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+
+bpts <- readRDS('data/biomeptsummits.RDS')
+bpts <- st_drop_geometry(bpts)
+kth <- which(colnames(bpts) %in% 'th01')
+ktl <- which(colnames(bpts) %in% 'tl01')
+th <- bpts[,kth:(kth+11)]
+tl <- bpts[,ktl:(ktl+11)]
+kp <- which(colnames(bpts) %in% 'p01')
+p <- bpts[,kp:(kp+11)]
+
+tmean <- (th+tl)/2
+bt <- sapply(tmean, function(x){ifelse(x > 0,x,0)})
+tg <- pmax(apply(bt[,c(1:4,11:12)], MARGIN = 1, FUN = mean), apply(bt[,c(5:10)], MARGIN = 1, FUN = mean))
+bpts$Tg <- tg
+pet <- th
+for(i in 1:12){#i=1
+  pet[,i]<- GetPET(mon=i, lat=bpts$lat, th=th[,i], tl=tl[,i], p=p[,i])
+}
+petall <- apply(pet, MARGIN=1, FUN=sum)
+pptall <- apply(p, MARGIN=1, FUN=sum)
+Tcall <- apply(tmean, MARGIN=1, FUN=min)
+Tclall <- apply(tl, MARGIN=1, FUN=min)
+cindex <- pmin(Tcall,Tclall+3)
+
+bpts <- readRDS('data/biomeptsummits.RDS')
+bpts$Tg <- tg
+bpts$m <- pptall/(pptall+petall)
+bpts$cindex <- cindex
+
+unique(st_drop_geometry(bpts[,c("BIOME","BIOME_NAME")]))
+ptssf3 <- bpts |> mutate(probiome = case_when(BIOME %in% c(1,3) & ((Tg >= 24 & elev < 1000) | (elev < 500 & Tg >= 12)) & 
+                                                  !(grepl('subtrop',tolower(ECO_NAME)) & lat > 22) ~ 'tropical moist forest',
+                                                
+                                                BIOME %in% c(1,4,5) & grepl('subtrop',tolower(ECO_NAME)) & lat >= 22 & elev < 500 ~ 'subtropical forest',
+                                                BIOME %in% c(2) & Tg >= 6 ~ 'tropical dry forest',
+                                                BIOME %in% c(1,3) & ((Tg < 24 & elev >= 500 & Tg >= 6)|(elev >= 1000 & Tg >= 6)) & !(grepl('subtrop',tolower(ECO_NAME)) & lat > 22) ~ 'tropical montane forest',
+                                                BIOME %in% c(4,5) & elev < 500 & Tg >= 6 & grepl('coastal|valdiv|magell', tolower(ECO_NAME)) ~ 'coastal forest',
+                                                BIOME %in% c(4,5) & (Tg >= 12 | (elev < 500 & Tg >= 6)) ~ 'temperate forest',
+                                                
+                                                BIOME %in% c(4,5) & Tg < 12 & Tg >= 6 & elev >= 500 ~ 'subalpine forest',
+                                                BIOME %in% c(6) & Tg >= 6 ~ 'boreal forest',
+                                                BIOME %in% c(11) & Tg < 6 & Tg > 0 ~ 'arctic tundra',
+                                                BIOME %in% c(4,5,8,5) & Tg < 6 & elev >= 500 & Tg > 0 ~ 'alpine tundra',
+                                                BIOME %in% c(1,2,3,7,10) & Tg < 6 & Tg > 0 & elev >= 1000 & lat < 22 & lat > -22 ~ 'paramo',
+                                                BIOME %in% c(13) & m < 0.333  ~ 'desert',
+                                                BIOME %in% c(7,8,10) & Tg >= 6  ~ 'grassland',
+                                                BIOME %in% c(12) & Tg >= 6  ~ 'scrub',
+                                                Tg == 0  ~ 'ice')) |> subset(!is.na(Tg) &  !is.na(Tg) & !is.na(probiome)) |> st_drop_geometry()
+
+ptssf3 <- bpts |> mutate(veg1 = case_when(BIOME %in% c(1,2,3,4,5,6) ~ 'forest',
+                                          BIOME %in% c(7,8,10) ~ 'grassland',
+                                          BIOME %in% c(12,13) ~ 'scrub')
+)
+mon <- 1:12
+mnn <- sprintf("%02d", mon) 
+thesecols <- c(paste0('th',mnn),paste0('th',mnn),paste0('p',mnn))
+cnmsnum <- c("lat","lon","elev","Tg","m","cindex",thesecols)
+ptssf3 <- ptssf3 |> group_by(LEVEL_NAME,REGION_NAM,CONTINENT,probiome) |>
+  summarize(across(all_of(cnmsnum), median))|>ungroup()
+
+saveRDS(ptssf3, 'C:/scripts/BioClimR3/data/biomesum.RDS')
+
+
+
+
+
+
+
+
+
+
+
+
 biosum <- readRDS('data/biomesum.RDS')
     sclim <- biosum[2,]
     sname = paste(sclim$LEVEL_NAME,"|", sclim$probiome)
