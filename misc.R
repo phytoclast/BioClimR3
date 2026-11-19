@@ -93,16 +93,18 @@ unique(st_drop_geometry(bpts[,c("BIOME","BIOME_NAME")]))
 #                                                 BIOME %in% c(12) & Tg >= 6  ~ 'scrub',
 #                                                 Tg == 0  ~ 'ice')) |> subset(!is.na(Tg) &  !is.na(Tg) & !is.na(probiome)) |> st_drop_geometry()
 
-ptssf3 <- bpts |> mutate(veg1 = case_when(BIOME %in% c(1,2,3,4,5,6)  & m >= 0.333 ~ 'forest',
+ptssf3 <- bpts |> mutate(veg1 = case_when(ECO_NAME %in% c('Guayanan Highlands moist forests','Florida sand pine scrub')|(grepl('scrub',ECO_NAME) & !grepl('forest',ECO_NAME)) ~ 'scrub',
+                                          BIOME %in% c(1,2,3,4,5,6)  & m >= 0.333 ~ 'forest',
                                           BIOME %in% c(7,8,10) ~ 'grassland',
                                           BIOME %in% c(12,13) | (BIOME %in% c(1,2,3,4,5,6)  & m < 0.333) ~ 'scrub'),
                          winter1 = case_when(cindex < 0 & Tg-cindex >=12 ~ 'continental',
-                                             cindex < 9 & Tg-cindex >=6 & Tg < 18 ~ 'oceanic',
-                                             cindex < 9 & Tg-cindex >=6  ~ 'subtropical',
-                                             TRUE ~ 'tropical'),
+                                             cindex < 12 & Tg-cindex >=6 & Tg < 18 ~ 'oceanic',
+                                             cindex < 12 & Tg-cindex >=6  ~ 'subtropical',
+                                             Tg >= 18 | elev >= 1000 ~ 'tropical',
+                                             TRUE ~ 'hyperoceanic'),
                          rain1=case_when(m < 0.333 ~ 'desert',
                                          m < 0.5 ~ 'dry',
-                                         m < 0.667 | !veg1 %in% 'forest'~ 'moist',
+                                         m < 0.667 | Tg < 6 | !veg1 %in% 'forest'~ 'moist',
                                          TRUE ~ 'rain'),
                          summer1=case_when(Tg < 6 & elev >= 1000 ~ 'alpine',
                                            Tg < 6  ~ 'arctic',
@@ -113,7 +115,8 @@ ptssf3 <- bpts |> mutate(veg1 = case_when(BIOME %in% c(1,2,3,4,5,6)  & m >= 0.33
                                            Tg < 24  & elev >= 1000 ~ 'submontane',
                                            Tg < 24   ~ 'warm',
                                            TRUE   ~ 'hot'),
-                         probiome=case_when(Tg < 6 & winter1 %in% 'tropical' ~ trimws(paste(winter1,summer1,rain1,'paramo')),
+                         probiome=case_when(Tg <= 0 ~ 'ice',
+                                            Tg < 6 & winter1 %in% 'tropical' ~ trimws(paste(winter1,summer1,rain1,'paramo')),
                                             Tg < 6 ~ trimws(paste(winter1,summer1,rain1,'tundra')),
                                             m < 0.2 ~ trimws(paste(winter1,summer1,'desert')),
                                             !is.na(veg1) ~ trimws(paste(winter1,summer1,rain1,veg1))))
@@ -337,6 +340,58 @@ biosum <- readRDS('data/biomesum.RDS')
       theme(legend.position='right',axis.text.x = element_text(angle = 90, vjust = 0, hjust = 1),
             panel.grid.major = element_line(), panel.grid.minor = element_blank())
     
+    
+    #climplot3 ----
+    #moisture x temperature
+    bw1=data.frame(y=c(0,0,6,6), x=c(0,1,1,0))
+    bw2=data.frame(y=c(6,6,12,12), x=c(0,1,1,0))
+    bw3=data.frame(y=c(12,12,18,18), x=c(0,1,1,0))
+    bw4=data.frame(y=c(18,18,24,24), x=c(0,1,1,0))
+    bw5=data.frame(y=c(24,24,30,30), x=c(0,1,1,0))
+    
+    bmm1=data.frame(y=c(0,0,30,30), x=c(0,0.1111,0.1111,0))
+    bmm2=data.frame(y=c(0,0,30,30), x=c(0.1111,0.2,0.2,0.1111))
+    bmm3=data.frame(y=c(0,0,30,30), x=c(0.2,0.3333,0.333,0.2))
+    bmm4=data.frame(y=c(0,0,30,30), x=c(0.3333,0.5,0.5,0.3333))
+    bmm5=data.frame(y=c(0,0,30,30), x=c(0.5,0.6667,0.6667,0.5))
+    bmm6=data.frame(y=c(0,0,30,30), x=c(0.6667,1,1,0.6667))
+    
+ggplot() +
+      geom_polygon(data=bw1, mapping=aes(x=x, y=y, fill='alpine'),alpha = 0.2)+
+      geom_polygon(data=bw2, mapping=aes(x=x, y=y, fill='cool'),alpha = 0.2)+
+      geom_polygon(data=bw3, mapping=aes(x=x, y=y, fill='mild'),alpha = 0.2)+
+      geom_polygon(data=bw4, mapping=aes(x=x, y=y, fill='warm'),alpha = 0.2)+
+      geom_polygon(data=bw5, mapping=aes(x=x, y=y, fill='hot'),alpha = 0.2)+
+      geom_polygon(data=bmm1, mapping=aes(x=x, y=y, fill='perarid'),alpha = 0.1)+
+      geom_polygon(data=bmm2, mapping=aes(x=x, y=y, fill='arid'),alpha = 0.1)+
+      geom_polygon(data=bmm3, mapping=aes(x=x, y=y, fill='semiarid'),alpha = 0.1)+
+      geom_polygon(data=bmm4, mapping=aes(x=x, y=y, fill='subhumid'),alpha = 0.1)+
+      geom_polygon(data=bmm5, mapping=aes(x=x, y=y, fill='humid'),alpha = 0.1)+
+      geom_polygon(data=bmm6, mapping=aes(x=x, y=y, fill='perhumid'),alpha = 0.1)+
+      geom_point(mapping=aes(x=m/100, y=Tg), color = 'black', size=0.5)+
+      scale_fill_manual("Legend", values = c("alpine" = "cyan",
+                                             "cool" = "green",
+                                             "mild" = "yellow",
+                                             "warm" = "orange",
+                                             "hot" = "red",
+                                             "perarid" = "red",
+                                             "arid" = "orange",
+                                             "semiarid" = "yellow",
+                                             "subhumid" = "green",
+                                             "humid" = "cyan",
+                                             "perhumid" = "blue"
+      ))+
+      scale_y_continuous(name= "Growing Season", breaks=c(6,12,18,24,30),
+                         labels=c('alpine/arctic 6', 'cool 12', 'mild 18','warm 24','hot 30'))+
+      scale_x_continuous(name= "P/PET Ratio", breaks=c(0, .1111, .2,0.3333,0.5,0.6667),
+                         labels=c('perarid', 'arid 0.125', 'semiarid 0.25','subhumid 0.5','humid 1','perhumid 2'))+
+      coord_fixed(ratio = 1/30,ylim = c(0,30), xlim = c(0, 1))+
+      
+      labs(title = paste("Climate of ",sname, "", sep=""))+
+      theme_bw()+
+      theme(legend.position='none', axis.text.x = element_text(angle = 90, vjust = 0, hjust = 1), 
+            axis.text.y = element_text(vjust = 0), 
+            panel.grid.major = element_line(), panel.grid.minor = element_blank()) 
     
     mtable <- df[,c('mon', 't', 'th', 'tl', 'p', 'e', 'a','u', 'Ra')]
     xtable::xtable(mtable)

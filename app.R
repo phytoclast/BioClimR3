@@ -23,7 +23,7 @@ ui <- bslib::page_fluid(
       ###############################
       fluidRow(
         radioButtons(
-          'soil','soil texture', choices = c('gravel'=0.03,sand=0.06535,'loam'=0.1104667,'muck'=0.5413333), selected =0.06535),
+          'soil','soil texture', choices = c('gravel'=0.04,sand=0.06535,'loam'=0.1104667,'muck'=0.5413333), selected =0.06535),
         sliderInput(
           'root', 'Effective root depth (cm)', 100, min = 0, max = 500, step = 10)),
       fluidRow(
@@ -33,9 +33,10 @@ ui <- bslib::page_fluid(
       fluidRow(
         radioButtons("RadioGraphtype",inline = T,  label = ("Select Graph"),
                      choiceNames = list(HTML("<font size=-3>Monthly"), 
-                                        HTML("Summer × Winter")
+                                        HTML("Summer × Winter"), 
+                                        HTML("Summer × Moisture")
                      ),
-                     choiceValues = list(1,2),
+                     choiceValues = list(1,2,3),
                      selected = 1)),
       HTML("</font>")
     ),
@@ -62,7 +63,7 @@ server <- function(input, output) {
     selectInput(inputId = "countryselect", #name of input
                 label = "Select Name:", #label displayed in ui
                 choices = unique(listcountries), #calls list of available counties
-                selected = 'Michigan')
+                selected = 'Alaska')
   })
   output$biome = renderUI({
     
@@ -71,7 +72,7 @@ server <- function(input, output) {
     selectInput(inputId = "biomeselect", #name of input
                 label = "Select Biome:", #label displayed in ui
                 choices = unique(listbiomes), #calls list of available counties
-                selected = 'temperate forest')
+                selected = 'continental boreal dry forest')
   })
   ###############################
   output$AWC <- renderText({
@@ -296,12 +297,70 @@ server <- function(input, output) {
       theme(legend.position='right',axis.text.x = element_text(angle = 90, vjust = 0, hjust = 1),
             panel.grid.major = element_line(), panel.grid.minor = element_blank())
     
+    
+    
+    #######-----
+    #climplot3 ----
+    #moisture x temperature
+    bw1=data.frame(y=c(0,0,6,6), x=c(0,1,1,0))
+    bw2=data.frame(y=c(6,6,12,12), x=c(0,1,1,0))
+    bw3=data.frame(y=c(12,12,18,18), x=c(0,1,1,0))
+    bw4=data.frame(y=c(18,18,24,24), x=c(0,1,1,0))
+    bw5=data.frame(y=c(24,24,30,30), x=c(0,1,1,0))
+    
+    bmm1=data.frame(y=c(0,0,30,30), x=c(0,0.1111,0.1111,0))
+    bmm2=data.frame(y=c(0,0,30,30), x=c(0.1111,0.2,0.2,0.1111))
+    bmm3=data.frame(y=c(0,0,30,30), x=c(0.2,0.3333,0.333,0.2))
+    bmm4=data.frame(y=c(0,0,30,30), x=c(0.3333,0.5,0.5,0.3333))
+    bmm5=data.frame(y=c(0,0,30,30), x=c(0.5,0.6667,0.6667,0.5))
+    bmm6=data.frame(y=c(0,0,30,30), x=c(0.6667,1,1,0.6667))
+    
+  climplot3 <- ggplot() +
+    geom_polygon(data=bw1, mapping=aes(x=x, y=y, fill='alpine'),alpha = 0.2)+
+    geom_polygon(data=bw2, mapping=aes(x=x, y=y, fill='cool'),alpha = 0.2)+
+    geom_polygon(data=bw3, mapping=aes(x=x, y=y, fill='mild'),alpha = 0.2)+
+    geom_polygon(data=bw4, mapping=aes(x=x, y=y, fill='warm'),alpha = 0.2)+
+    geom_polygon(data=bw5, mapping=aes(x=x, y=y, fill='hot'),alpha = 0.2)+
+    geom_polygon(data=bmm1, mapping=aes(x=x, y=y, fill='perarid'),alpha = 0.1)+
+    geom_polygon(data=bmm2, mapping=aes(x=x, y=y, fill='arid'),alpha = 0.1)+
+    geom_polygon(data=bmm3, mapping=aes(x=x, y=y, fill='semiarid'),alpha = 0.1)+
+    geom_polygon(data=bmm4, mapping=aes(x=x, y=y, fill='subhumid'),alpha = 0.1)+
+    geom_polygon(data=bmm5, mapping=aes(x=x, y=y, fill='humid'),alpha = 0.1)+
+    geom_polygon(data=bmm6, mapping=aes(x=x, y=y, fill='perhumid'),alpha = 0.1)+
+    geom_point(mapping=aes(x=m/100, y=Tg), color = 'black', size=0.5)+
+    scale_fill_manual("Legend", values = c("alpine" = "cyan",
+                                           "cool" = "green",
+                                           "mild" = "yellow",
+                                           "warm" = "orange",
+                                           "hot" = "red",
+                                           "perarid" = "red",
+                                           "arid" = "orange",
+                                           "semiarid" = "yellow",
+                                           "subhumid" = "green",
+                                           "humid" = "cyan",
+                                           "perhumid" = "blue"
+    ))+
+    scale_y_reverse(name= "Growing Season", breaks=c(0,6,12,18,24,30),
+                       labels=c('ice 0','alpine/arctic 6', 'cool 12', 'mild 18','warm 24','hot 30'), expand=FALSE)+
+    scale_x_continuous(name= "P/PET Ratio", breaks=c(0, .1111, .2,0.3333,0.5,0.6667),
+                       labels=c('perarid', 'arid 0.125', 'semiarid 0.25','subhumid 0.5','humid 1','perhumid 2'), expand=FALSE)+
+    coord_fixed(ratio = 1/30,ylim = c(0,30), xlim = c(0, 1))+
+    
+    labs(title = paste("Climate of ",sname, "", sep=""))+
+    theme_bw()+
+    theme(legend.position='none', axis.text.x = element_text(angle = 90, vjust = 0, hjust = 1), 
+          axis.text.y = element_text(vjust = 0), 
+          panel.grid.major = element_line(), panel.grid.minor = element_blank()) 
+    #######-----
+    
     mtable <- df[,c('mon', 't', 'th', 'tl', 'p', 'e', 'a','u', 'Ra')]
     rv$my_table <- xtable::xtable(mtable)
     if(input$RadioGraphtype == 1){
       climplot1 
     }else if(input$RadioGraphtype == 2) {
       climplot2
+    }else if(input$RadioGraphtype == 3) {
+      climplot3
     }
     
     
