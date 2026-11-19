@@ -62,7 +62,7 @@ server <- function(input, output) {
     
     selectInput(inputId = "countryselect", #name of input
                 label = "Select Name:", #label displayed in ui
-                choices = unique(listcountries), #calls list of available counties
+                choices = unique(listcountries), #calls list of available countries
                 selected = 'Alaska')
   })
   output$biome = renderUI({
@@ -71,7 +71,7 @@ server <- function(input, output) {
     listbiomes <- sort(unique(listbiomes1$probiome))
     selectInput(inputId = "biomeselect", #name of input
                 label = "Select Biome:", #label displayed in ui
-                choices = unique(listbiomes), #calls list of available counties
+                choices = unique(listbiomes), #calls list of available countries
                 selected = 'continental boreal dry forest')
   })
   ###############################
@@ -217,7 +217,7 @@ server <- function(input, output) {
     
     rv$climatext <- climatext
     
-    climplot1 <- makeClimplot( t=df$t,
+    try(climplot1 <- makeClimplot( t=df$t,
                                p=df$p,
                                th = df$th,
                                tl = df$tl,
@@ -229,7 +229,7 @@ server <- function(input, output) {
                                p80 = NULL,
                                p20 = NULL,
                                name = climaclass,
-                               bar = input$simplebar)
+                               bar = input$simplebar))
     
     a1=data.frame(x=c(-50,-50,0,-6), y=c(0,6,6,0))
     a2=data.frame(x=c(-50,-50,0,-6), y=c(6,12,12,6))
@@ -275,7 +275,7 @@ server <- function(input, output) {
       # geom_line(data=l6, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
       # geom_line(data=l7, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
       geom_line(data=l8, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
-      geom_point(mapping=aes(x=cindex, y=Tg), color = 'black', size=5, shape ="\u2605")+
+      geom_point(mapping=aes(x=cindex, y=Tg), color = 'black', size=5, shape =16)+
       #geom_density2d(data=StationMeans, mapping=aes(x=Cindex, y=Tg),color = 'black',alpha = 0.25)+
       scale_fill_manual("Legend", values = c("alpine" = "lightblue",
                                              "boreal" = "darkgreen",
@@ -327,7 +327,7 @@ server <- function(input, output) {
     geom_polygon(data=bmm4, mapping=aes(x=x, y=y, fill='subhumid'),alpha = 0.1)+
     geom_polygon(data=bmm5, mapping=aes(x=x, y=y, fill='humid'),alpha = 0.1)+
     geom_polygon(data=bmm6, mapping=aes(x=x, y=y, fill='perhumid'),alpha = 0.1)+
-    geom_point(mapping=aes(x=m/100, y=Tg), color = 'black', size=5, shape ="\u2605")+
+    geom_point(mapping=aes(x=m/100, y=Tg), color = 'black', size=5, shape =16)+
     scale_fill_manual("Legend", values = c("alpine" = "cyan",
                                            "cool" = "green",
                                            "mild" = "yellow",
@@ -356,7 +356,7 @@ server <- function(input, output) {
     mtable <- df[,c('mon', 't', 'th', 'tl', 'p', 'e', 'a','u', 'Ra')]
     rv$my_table <- xtable::xtable(mtable)
     if(input$RadioGraphtype == 1){
-      climplot1 
+            try(climplot1)
     }else if(input$RadioGraphtype == 2) {
       climplot2
     }else if(input$RadioGraphtype == 3) {
