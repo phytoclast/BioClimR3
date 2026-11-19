@@ -35,6 +35,8 @@ saveRDS(biomepts,'data/biomeptsummits.RDS')
 #------------
 library(climatools)
 library(ggplot2)
+library(sf)
+library(terra)
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 bpts <- readRDS('data/biomeptsummits.RDS')
@@ -64,39 +66,80 @@ bpts <- readRDS('data/biomeptsummits.RDS')
 bpts$Tg <- tg
 bpts$m <- pptall/(pptall+petall)
 bpts$cindex <- cindex
-
 unique(st_drop_geometry(bpts[,c("BIOME","BIOME_NAME")]))
-ptssf3 <- bpts |> mutate(probiome = case_when(BIOME %in% c(1,3) & ((Tg >= 24 & elev < 1000) | (elev < 500 & Tg >= 12)) & 
-                                                  !(grepl('subtrop',tolower(ECO_NAME)) & lat > 22) ~ 'tropical moist forest',
-                                                
-                                                BIOME %in% c(1,4,5) & grepl('subtrop',tolower(ECO_NAME)) & lat >= 22 & elev < 500 ~ 'subtropical forest',
-                                                BIOME %in% c(2) & Tg >= 6 ~ 'tropical dry forest',
-                                                BIOME %in% c(1,3) & ((Tg < 24 & elev >= 500 & Tg >= 6)|(elev >= 1000 & Tg >= 6)) & !(grepl('subtrop',tolower(ECO_NAME)) & lat > 22) ~ 'tropical montane forest',
-                                                BIOME %in% c(4,5) & elev < 500 & Tg >= 6 & grepl('coastal|valdiv|magell', tolower(ECO_NAME)) ~ 'coastal forest',
-                                                BIOME %in% c(4,5) & (Tg >= 12 | (elev < 500 & Tg >= 6)) ~ 'temperate forest',
-                                                
-                                                BIOME %in% c(4,5) & Tg < 12 & Tg >= 6 & elev >= 500 ~ 'subalpine forest',
-                                                BIOME %in% c(6) & Tg >= 6 ~ 'boreal forest',
-                                                BIOME %in% c(11) & Tg < 6 & Tg > 0 ~ 'arctic tundra',
-                                                BIOME %in% c(4,5,8,5) & Tg < 6 & elev >= 500 & Tg > 0 ~ 'alpine tundra',
-                                                BIOME %in% c(1,2,3,7,10) & Tg < 6 & Tg > 0 & elev >= 1000 & lat < 22 & lat > -22 ~ 'paramo',
-                                                BIOME %in% c(13) & m < 0.333  ~ 'desert',
-                                                BIOME %in% c(7,8,10) & Tg >= 6  ~ 'grassland',
-                                                BIOME %in% c(12) & Tg >= 6  ~ 'scrub',
-                                                Tg == 0  ~ 'ice')) |> subset(!is.na(Tg) &  !is.na(Tg) & !is.na(probiome)) |> st_drop_geometry()
 
-ptssf3 <- bpts |> mutate(veg1 = case_when(BIOME %in% c(1,2,3,4,5,6) ~ 'forest',
+
+
+
+
+
+
+# ptssf3 <- bpts |> mutate(probiome = case_when(BIOME %in% c(1,3) & ((Tg >= 24 & elev < 1000) | (elev < 500 & Tg >= 12)) & 
+#                                                   !(grepl('subtrop',tolower(ECO_NAME)) & lat > 22) ~ 'tropical moist forest',
+#                                                 
+#                                                 BIOME %in% c(1,4,5) & grepl('subtrop',tolower(ECO_NAME)) & lat >= 22 & elev < 500 ~ 'subtropical forest',
+#                                                 BIOME %in% c(2) & Tg >= 6 ~ 'tropical dry forest',
+#                                                 BIOME %in% c(1,3) & ((Tg < 24 & elev >= 500 & Tg >= 6)|(elev >= 1000 & Tg >= 6)) & !(grepl('subtrop',tolower(ECO_NAME)) & lat > 22) ~ 'tropical montane forest',
+#                                                 BIOME %in% c(4,5) & elev < 500 & Tg >= 6 & grepl('coastal|valdiv|magell', tolower(ECO_NAME)) ~ 'coastal forest',
+#                                                 BIOME %in% c(4,5) & (Tg >= 12 | (elev < 500 & Tg >= 6)) ~ 'temperate forest',
+#                                                 
+#                                                 BIOME %in% c(4,5) & Tg < 12 & Tg >= 6 & elev >= 500 ~ 'subalpine forest',
+#                                                 BIOME %in% c(6) & Tg >= 6 ~ 'boreal forest',
+#                                                 BIOME %in% c(11) & Tg < 6 & Tg > 0 ~ 'arctic tundra',
+#                                                 BIOME %in% c(4,5,8,5) & Tg < 6 & elev >= 500 & Tg > 0 ~ 'alpine tundra',
+#                                                 BIOME %in% c(1,2,3,7,10) & Tg < 6 & Tg > 0 & elev >= 1000 & lat < 22 & lat > -22 ~ 'paramo',
+#                                                 BIOME %in% c(13) & m < 0.333  ~ 'desert',
+#                                                 BIOME %in% c(7,8,10) & Tg >= 6  ~ 'grassland',
+#                                                 BIOME %in% c(12) & Tg >= 6  ~ 'scrub',
+#                                                 Tg == 0  ~ 'ice')) |> subset(!is.na(Tg) &  !is.na(Tg) & !is.na(probiome)) |> st_drop_geometry()
+
+ptssf3 <- bpts |> mutate(veg1 = case_when(BIOME %in% c(1,2,3,4,5,6)  & m >= 0.333 ~ 'forest',
                                           BIOME %in% c(7,8,10) ~ 'grassland',
-                                          BIOME %in% c(12,13) ~ 'scrub')
-)
+                                          BIOME %in% c(12,13) | (BIOME %in% c(1,2,3,4,5,6)  & m < 0.333) ~ 'scrub'),
+                         winter1 = case_when(cindex < 0 & Tg-cindex >=12 ~ 'continental',
+                                             cindex < 9 & Tg-cindex >=6 & Tg < 18 ~ 'oceanic',
+                                             cindex < 9 & Tg-cindex >=6  ~ 'subtropical',
+                                             TRUE ~ 'tropical'),
+                         rain1=case_when(m < 0.333 ~ 'desert',
+                                         m < 0.5 ~ 'dry',
+                                         m < 0.667 | !veg1 %in% 'forest'~ 'moist',
+                                         TRUE ~ 'rain'),
+                         summer1=case_when(Tg < 6 & elev >= 1000 ~ 'alpine',
+                                           Tg < 6  ~ 'arctic',
+                                           Tg < 12  & elev >= 1000~ 'subalpine',
+                                           Tg < 12   ~ 'boreal',
+                                           Tg < 18  & elev >= 1000 ~ 'montane',
+                                           Tg < 18   ~ 'hemiboreal',
+                                           Tg < 24  & elev >= 1000 ~ 'submontane',
+                                           Tg < 24   ~ 'warm',
+                                           TRUE   ~ 'hot'),
+                         probiome=case_when(Tg < 6 & winter1 %in% 'tropical' ~ trimws(paste(winter1,summer1,rain1,'paramo')),
+                                            Tg < 6 ~ trimws(paste(winter1,summer1,rain1,'tundra')),
+                                            m < 0.2 ~ trimws(paste(winter1,summer1,'desert')),
+                                            !is.na(veg1) ~ trimws(paste(winter1,summer1,rain1,veg1))))
+                         
+
+                         unique(ptssf3$probiome)
+
+                         
 mon <- 1:12
 mnn <- sprintf("%02d", mon) 
-thesecols <- c(paste0('th',mnn),paste0('th',mnn),paste0('p',mnn))
-cnmsnum <- c("lat","lon","elev","Tg","m","cindex",thesecols)
-ptssf3 <- ptssf3 |> group_by(LEVEL_NAME,REGION_NAM,CONTINENT,probiome) |>
-  summarize(across(all_of(cnmsnum), median))|>ungroup()
+thesecols <- c(paste0('th',mnn),paste0('tl',mnn),paste0('p',mnn))
+cnmsnum <- c('Tg','cindix','m')
 
-saveRDS(ptssf3, 'C:/scripts/BioClimR3/data/biomesum.RDS')
+od <- ptssf3 |> st_drop_geometry() |>  subset(!is.na(Tg) & !is.na(probiome)) |> group_by(winter1) |>
+  mutate(cindex = median(cindex)) |> group_by(summer1) |> mutate(Tg = median(Tg)) |>
+  group_by(rain1) |> mutate(m=median(m)) |> ungroup() |> subset(select=c(winter1, summer1, rain1, veg1, probiome, Tg, cindex, m)) |> unique()
+od <- od |> arrange(cindex, m, Tg,veg1)
+odprobiome <- unique(od$probiome)
+
+
+cnmsnum <- c("lat","lon","elev","Tg","m","cindex",thesecols)
+sumtab <- ptssf3 |> st_drop_geometry() |>  subset(!is.na(Tg) & !is.na(probiome)) |> 
+  mutate(probiome=factor(probiome, levels = odprobiome)) |> group_by(LEVEL_NAME,REGION_NAM,CONTINENT,probiome) |>
+  summarize(across(all_of(cnmsnum), median))|>ungroup() 
+
+saveRDS(sumtab, 'data/biomesum.RDS')
 
 
 
