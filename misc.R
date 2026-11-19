@@ -368,7 +368,7 @@ ggplot() +
       geom_polygon(data=bmm4, mapping=aes(x=x, y=y, fill='subhumid'),alpha = 0.1)+
       geom_polygon(data=bmm5, mapping=aes(x=x, y=y, fill='humid'),alpha = 0.1)+
       geom_polygon(data=bmm6, mapping=aes(x=x, y=y, fill='perhumid'),alpha = 0.1)+
-      geom_point(mapping=aes(x=m/100, y=Tg), color = 'black', size=0.5)+
+      geom_point(mapping=aes(x=m/100, y=Tg), color = 'black', shape="\u2605", size=3)+
       scale_fill_manual("Legend", values = c("alpine" = "cyan",
                                              "cool" = "green",
                                              "mild" = "yellow",

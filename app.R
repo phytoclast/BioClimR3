@@ -275,7 +275,7 @@ server <- function(input, output) {
       # geom_line(data=l6, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
       # geom_line(data=l7, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
       geom_line(data=l8, mapping=aes(x=x, y=y),alpha = 0.2, color='black', linetype='solid')+
-      geom_point(mapping=aes(x=cindex, y=Tg), color = 'black', size=0.5)+
+      geom_point(mapping=aes(x=cindex, y=Tg), color = 'black', size=5, shape ="\u2605")+
       #geom_density2d(data=StationMeans, mapping=aes(x=Cindex, y=Tg),color = 'black',alpha = 0.25)+
       scale_fill_manual("Legend", values = c("alpine" = "lightblue",
                                              "boreal" = "darkgreen",
@@ -327,7 +327,7 @@ server <- function(input, output) {
     geom_polygon(data=bmm4, mapping=aes(x=x, y=y, fill='subhumid'),alpha = 0.1)+
     geom_polygon(data=bmm5, mapping=aes(x=x, y=y, fill='humid'),alpha = 0.1)+
     geom_polygon(data=bmm6, mapping=aes(x=x, y=y, fill='perhumid'),alpha = 0.1)+
-    geom_point(mapping=aes(x=m/100, y=Tg), color = 'black', size=0.5)+
+    geom_point(mapping=aes(x=m/100, y=Tg), color = 'black', size=5, shape ="\u2605")+
     scale_fill_manual("Legend", values = c("alpine" = "cyan",
                                            "cool" = "green",
                                            "mild" = "yellow",
