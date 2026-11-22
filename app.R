@@ -1,6 +1,7 @@
 library(shiny)
 library(climatools)
 library(ggplot2)
+library(sf)
 biosum <- readRDS('data/biomesum.RDS')
 lakes <- readRDS(file='data/lakes.RDS')
 states <- readRDS(file='data/states.RDS')
@@ -155,8 +156,9 @@ server <- function(input, output) {
                         Tg < 24 ~ 'Warm',
                         TRUE ~ 'Hot')
     
-    tindex <- case_when(cregime %in% 1 ~ paste(tindex,'Polar'),
-                        cregime %in% 2 ~ paste(tindex,'Temperate'),
+    tindex <- case_when(cregime %in% 1 ~ paste(tindex,'Continental'),
+                        cregime %in% 2 & Tg < 18 ~ paste(tindex,'Oceanic'),
+                        cregime %in% 2 ~ paste(tindex,'Subtropical'),
                         cregime %in% 3 ~ paste(tindex,'Tropical'))
     
     
@@ -191,7 +193,7 @@ server <- function(input, output) {
                     TRUE ~ 'a')
     
     
-    climaclass <- paste(sname,'\n',mindex, tindex, paste0(' ',k1,k2,k3, ' (',alt,')'))
+    climaclass <- paste(sname,'\n',mindex, tindex, paste0(' ',k1,k2,k3))
     climaref <- paste(
       "#Summary Statistics#\n
       MAAT = mean annual air temperature.\n
@@ -222,7 +224,7 @@ server <- function(input, output) {
     
     rv$climatext <- climatext
     
-    try(climplot1 <- makeClimplot( t=df$t,
+    climplot1 <- makeClimplot( t=df$t,
                                p=df$p,
                                th = df$th,
                                tl = df$tl,
@@ -234,7 +236,7 @@ server <- function(input, output) {
                                p80 = NULL,
                                p20 = NULL,
                                name = climaclass,
-                               bar = input$simplebar))
+                               bar = input$simplebar)
     
     a1=data.frame(x=c(-50,-50,0,-6), y=c(0,6,6,0))
     a2=data.frame(x=c(-50,-50,0,-6), y=c(6,12,12,6))
@@ -364,7 +366,7 @@ server <- function(input, output) {
   ocean = data.frame(y=c(-90,-90,90,90), x=c(-180,180,180,-180))
   
   climmap <-  ggplot() +
-    geom_polygon(data = ocean, 
+    geom_polygon(data = ocean,
                  aes(x = x, y = y),
                  color = 'darkgray', fill = 'lightcyan', size = .2)+
     geom_sf(data = states,
@@ -372,14 +374,14 @@ server <- function(input, output) {
     geom_sf(data = lakes,
             color = 'darkgray', fill = 'lightcyan', size = .2)+
     geom_point(data=sclim, mapping=aes(x=lon, y=lat), color = 'red', size=2)+
-    
-    coord_sf(xlim = c(graphxmin,graphxmax), ylim = c(graphymin,graphymax)) + theme_void() 
+
+    coord_sf(xlim = c(graphxmin,graphxmax), ylim = c(graphymin,graphymax)) + theme_void()
   #######-----
   
     mtable <- df[,c('mon', 't', 'th', 'tl', 'p', 'e', 'a','u', 'Ra')]
     rv$my_table <- xtable::xtable(mtable)
     if(input$RadioGraphtype == 1){
-            try(climplot1)
+            climplot1
     }else if(input$RadioGraphtype == 2) {
       climplot2
     }else if(input$RadioGraphtype == 3) {
