@@ -60,7 +60,7 @@ petall <- apply(pet, MARGIN=1, FUN=sum)
 pptall <- apply(p, MARGIN=1, FUN=sum)
 Tcall <- apply(tmean, MARGIN=1, FUN=min)
 Tclall <- apply(tl, MARGIN=1, FUN=min)
-cindex <- pmin(Tcall,Tclall+3)
+cindex <- pmin(Tcall,pmax(Tclall,Tcall-6)+3)
 
 bpts <- readRDS('data/biomeptsummits.RDS')
 bpts$Tg <- tg

@@ -2,6 +2,8 @@ library(shiny)
 library(climatools)
 library(ggplot2)
 biosum <- readRDS('data/biomesum.RDS')
+lakes <- readRDS(file='data/lakes.RDS')
+states <- readRDS(file='data/states.RDS')
 
 ui <- bslib::page_fluid(
   
@@ -34,9 +36,10 @@ ui <- bslib::page_fluid(
         radioButtons("RadioGraphtype",inline = T,  label = ("Select Graph"),
                      choiceNames = list(HTML("<font size=-3>Monthly"), 
                                         HTML("Summer × Winter"), 
-                                        HTML("Summer × Moisture")
+                                        HTML("Summer × Moisture"), 
+                                        HTML("Map")
                      ),
-                     choiceValues = list(1,2,3),
+                     choiceValues = list(1,2,3,4),
                      selected = 1)),
       HTML("</font>")
     ),
@@ -116,9 +119,11 @@ server <- function(input, output) {
     m <- MAP/(PET+MAP+0.01)*100
     d <- 100-pAET/(PET+0.01)*100
     Sd <- 100-AET/(PET+0.01)*100
+    # Tclx <- climatools::XtremLow(Tcl=Tcl,Tc=Tc,Tw=Tw)
     Tclx <- climatools::XtremLow(Tcl=Tcl,Lat=lat,Lon=lon,Elev=elev)
-    cindex <- pmin(Tc,Tcl+3)
-    cindex2 <- pmin(Tc, Tclx*12/15+12)
+    # cindex <- pmin(Tc,Tcl+3)
+    cindex <- pmin(Tc,pmax(Tcl,Tc-6)+3)
+    # cindex <- pmin(Tc, Tclx*12/15+12)
     trindex <- Tg-cindex
     climatext <- paste0("lat: ",round(lat,1),"° | lon: ",round(lon,1),"° | elev: ",round(elev,0)," m| years: 1961-1990\n",
                         "MAAT: ",round(MAAT,1),"°C | MAP: ",round(MAP,0)," mm | PET: ",round(PET,0)," mm\n",
@@ -352,7 +357,25 @@ server <- function(input, output) {
           axis.text.y = element_text(vjust = 0), 
           panel.grid.major = element_line(), panel.grid.minor = element_blank()) 
     #######-----
+  graphymax = (sclim$lat)+10# 
+  graphymin = (sclim$lat)-10# 
+  graphxmax = (sclim$lon)+10/cos(sclim$lat*2*pi/360)# 
+  graphxmin = (sclim$lon)-10/cos(sclim$lat*2*pi/360)# 
+  ocean = data.frame(y=c(-90,-90,90,90), x=c(-180,180,180,-180))
+  
+  climmap <-  ggplot() +
+    geom_polygon(data = ocean, 
+                 aes(x = x, y = y),
+                 color = 'darkgray', fill = 'lightcyan', size = .2)+
+    geom_sf(data = states,
+            color = 'darkgray', fill = 'lightyellow', size = .2)+
+    geom_sf(data = lakes,
+            color = 'darkgray', fill = 'lightcyan', size = .2)+
+    geom_point(data=sclim, mapping=aes(x=lon, y=lat), color = 'red', size=2)+
     
+    coord_sf(xlim = c(graphxmin,graphxmax), ylim = c(graphymin,graphymax)) + theme_void() 
+  #######-----
+  
     mtable <- df[,c('mon', 't', 'th', 'tl', 'p', 'e', 'a','u', 'Ra')]
     rv$my_table <- xtable::xtable(mtable)
     if(input$RadioGraphtype == 1){
@@ -361,6 +384,8 @@ server <- function(input, output) {
       climplot2
     }else if(input$RadioGraphtype == 3) {
       climplot3
+    }else if(input$RadioGraphtype == 4) {
+      climmap
     }
     
     

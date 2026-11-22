@@ -1,0 +1,13 @@
+name: bioclimr3
+title: BioClimR3
+username: phytoclast
+account: phytoclast
+server: connect.posit.cloud
+hostUrl: https://api.connect.posit.cloud/v1
+appId: 01a1e292-ef96-5125-ea3b-83ee3a8117e0
+bundleId:
+url: https://connect.posit.cloud/phytoclast/content/01a1e292-ef96-5125-ea3b-83ee3a8117e0
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: .gitattributes|data/biomepts.RDS|data/biomeptsummits.RDS|data/summits.RDS|misc.R
