@@ -204,6 +204,7 @@ server <- function(input, output) {
     k3 <- case_when(k1 %in% c('E','A') ~ '',
                     k1 %in% 'B' & MAAT < 18   ~ 'k',
                     k1 %in% 'B'  ~ 'h',
+                    Tc <= -38 ~ 'd',
                     k1 %in% c('C','D') & nmonth10 < 4 ~ 'c',
                     k1 %in% c('C','D') & Tw < 22 ~ 'b',
                     TRUE ~ 'a')
