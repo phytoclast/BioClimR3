@@ -171,27 +171,42 @@ server <- function(input, output) {
                      cregime  %in% 3 & Tg < 24  ~ 'Tropical Montane',
                      cregime  %in% 3  ~ 'Tropical')
     
-    k1 <- case_when(Tg < 6 ~ 'E',
-                    prat < 1 ~ 'B',
-                    cregime  %in% 1  ~ 'D',
-                    cregime  %in% 2  | Tg < 18 ~ 'C',
+    #koppen
+    df$rnk <- rank(-df$t, ties.method='first')
+    nmonth10 <- max(subset(df, t >= 10)$rnk)
+    pptsummer <- sum(subset(df,(mon %in% c(4,5,6,7,8,9) & lat >=0) | (mon %in% c(10,11,12,1,2,3) & lat < 0))$p)
+    psummer <- pptsummer/(MAP+0.01) 
+    pthresh <- MAAT*20+case_when(psummer >= 0.7 ~ 280,
+                                 psummer >= 0.3 ~ 140,
+                                 TRUE ~ 0)
+    psmax <- max(subset(df,(mon %in% c(4,5,6,7,8,9) & lat >=0) | (mon %in% c(10,11,12,1,2,3) & lat < 0))$p)
+    psmin <- min(subset(df,(mon %in% c(4,5,6,7,8,9) & lat >=0) | (mon %in% c(10,11,12,1,2,3) & lat < 0))$p)
+    pwmax <- max(subset(df,(mon %in% c(10,11,12,1,2,3) & lat >=0) | (mon %in% c(4,5,6,7,8,9) & lat < 0))$p)
+    pwmin <- min(subset(df,(mon %in% c(10,11,12,1,2,3) & lat >=0) | (mon %in% c(4,5,6,7,8,9) & lat < 0))$p)
+    
+    k1 <- case_when(nmonth10 < 1 ~ 'E',
+                    MAP < pthresh ~ 'B',
+                    Tc < 0 ~ 'D',
+                    Tc < 18 ~ 'C',
                     TRUE  ~ 'A')
     
     
     k2 <- case_when(k1 %in% 'E' & Tw < 0 ~ 'F',
                     k1 %in% 'E'  ~ 'T',
-                    k1 %in% 'B' & prat < 0.25  ~ 'W',
+                    k1 %in% 'B' & MAP < pthresh/2  ~ 'W',
                     k1 %in% 'B'  ~ 'S',
-                    d >= 25 & MAAT > Tp  ~ 's',
-                    d >= 25   ~ 'w',
-                    TRUE  ~ 'f')
+                    k1 %in% c('C','D') & psmin < 30 & psmin < pwmax/3  ~ 's',
+                    k1 %in% c('C','D') & pwmin < psmax/10   ~ 'w',
+                    k1 %in% c('C','D') ~ 'f',
+                    pmin(pwmin,psmin) >= 60 ~ 'f',
+                    pmin(pwmin,psmin) >= 100-MAP/25 ~ 'm',
+                    TRUE ~ 'w')
     k3 <- case_when(k1 %in% c('E','A') ~ '',
-                    k1 %in% 'B' & Tg < 18   ~ 'k',
+                    k1 %in% 'B' & MAAT < 18   ~ 'k',
                     k1 %in% 'B'  ~ 'h',
-                    k1 %in% c('C','D') & Tg < 12 ~ 'c',
-                    k1 %in% c('C','D') & Tg < 18 ~ 'b',
+                    k1 %in% c('C','D') & nmonth10 < 4 ~ 'c',
+                    k1 %in% c('C','D') & Tw < 22 ~ 'b',
                     TRUE ~ 'a')
-    
     
     climaclass <- paste(sname,'\n',mindex, tindex, paste0(' ',k1,k2,k3))
     climaref <- paste(
