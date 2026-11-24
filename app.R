@@ -179,10 +179,10 @@ server <- function(input, output) {
     pthresh <- MAAT*20+case_when(psummer >= 0.7 ~ 280,
                                  psummer >= 0.3 ~ 140,
                                  TRUE ~ 0)
-    psmax <- max(subset(df,(mon %in% c(4,5,6,7,8,9) & lat >=0) | (mon %in% c(10,11,12,1,2,3) & lat < 0))$p)
-    psmin <- min(subset(df,(mon %in% c(4,5,6,7,8,9) & lat >=0) | (mon %in% c(10,11,12,1,2,3) & lat < 0))$p)
-    pwmax <- max(subset(df,(mon %in% c(10,11,12,1,2,3) & lat >=0) | (mon %in% c(4,5,6,7,8,9) & lat < 0))$p)
-    pwmin <- min(subset(df,(mon %in% c(10,11,12,1,2,3) & lat >=0) | (mon %in% c(4,5,6,7,8,9) & lat < 0))$p)
+    psmax <- max(subset(df,(mon %in% c(6,7,8) & lat >=0) | (mon %in% c(12,1,2) & lat < 0))$p)
+    psmin <- min(subset(df,(mon %in% c(6,7,8) & lat >=0) | (mon %in% c(12,1,2) & lat < 0))$p)
+    pwmax <- max(subset(df,(mon %in% c(12,1,2) & lat >=0) | (mon %in% c(6,7,8) & lat < 0))$p)
+    pwmin <- min(subset(df,(mon %in% c(12,1,2) & lat >=0) | (mon %in% c(6,7,8) & lat < 0))$p)
     
     k1 <- case_when(nmonth10 < 1 ~ 'E',
                     MAP < pthresh ~ 'B',
